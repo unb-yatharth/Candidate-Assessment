@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HR Candidate Dashboard — Performance Marketing Assessment</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    background:#eef1f6;color:#16223a;line-height:1.55;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:1100px;margin:0 auto;padding:26px 20px 90px}
+    .card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(20,35,70,.10),0 8px 24px rgba(20,35,70,.06);
+    padding:28px;margin-bottom:18px}
+    h1{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+    h2{font-size:17px;font-weight:700;margin-bottom:14px}
+    h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#5a6c8c;margin-bottom:8px}
+    p{margin-bottom:12px}
+    .sub{color:#5a6c8c;font-size:13.5px}
+    .brandbar{background:#1f3864;color:#fff;padding:22px 28px;border-radius:12px 12px 0 0;margin:-28px -28px 22px}
+    .brandbar h1{color:#fff;margin:0}.brandbar .sub{color:#b9c7e0;margin-top:4px}
+    label{display:block;font-size:13px;font-weight:600;color:#41516f;margin:14px 0 6px}
+    input[type=text],input[type=password],select{width:100%;padding:11px 13px;
+    border:1.5px solid #d3dbe8;border-radius:8px;font-size:14.5px;font-family:inherit;background:#fff;color:#16223a}
+    input:focus,select:focus{outline:none;border-color:#2e5c9a;box-shadow:0 0 0 3px rgba(46,92,154,.12)}
+    button{font-family:inherit;font-size:14.5px;font-weight:600;padding:11px 22px;border-radius:8px;border:none;
+    background:#1f3864;color:#fff;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    button:hover{background:#2e5c9a}button:disabled{background:#b6c1d4;cursor:not-allowed}
+    button.ghost{background:#fff;color:#1f3864;border:1.5px solid #cfd8e6}
+    button.ghost:hover{background:#f2f6fb}
+    button.save{background:#2e7d4f}button.save:hover{background:#23633e}
+    .rule{border-top:1px solid #e6ebf3;margin:20px 0}
+    .note{background:#fff8e6;border-left:3px solid #e0a800;padding:12px 15px;border-radius:0 8px 8px 0;font-size:13.5px;margin-bottom:14px}
+    .warn{background:#fdeded;border-left:3px solid #c0392b;padding:12px 15px;border-radius:0 8px 8px 0;font-size:13.5px;margin-bottom:14px}
+    .ok{background:#eaf6ee;border-left:3px solid #2e7d4f;padding:12px 15px;border-radius:0 8px 8px 0;font-size:13.5px;margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px}
+    .stat{background:#f5f8fc;border:1px solid #e2e9f3;border-radius:9px;padding:12px 14px}
+    .stat .n{font-size:24px;font-weight:700;letter-spacing:-.5px}
+    .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:#7b8aa5;font-weight:700;margin-top:2px}
+    .band{padding:14px 18px;border-radius:9px;font-size:17px;font-weight:700;text-align:center;margin:14px 0}
+    .b-go{background:#eaf6ee;color:#1d6b3f;border:1.5px solid #93cba9}
+    .b-mid{background:#fff6e0;color:#8a6100;border:1.5px solid #e6c165}
+    .b-no{background:#fdeded;color:#96271a;border:1.5px solid #e0a09a}
+    .b-pending{background:#eef3fb;color:#1f3864;border:1.5px solid #9bb2d4}
+    .sbar{height:8px;background:#e6ebf3;border-radius:4px;overflow:hidden;margin-top:6px}
+    .sbar>div{height:100%;border-radius:4px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .hide{display:none!important}
+    table{width:100%;border-collapse:collapse;font-size:13.5px}
+    th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#7b8aa5;padding:9px 10px;border-bottom:2px solid #e2e9f3}
+    td{padding:10px;border-bottom:1px solid #eef1f6;vertical-align:middle}
+    tr.hoverable:hover{background:#f7faff;cursor:pointer}
+    .badge{display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase}
+    .badge.submitted{background:#fff6e0;color:#8a6100;border:1px solid #e6c165}
+    .badge.graded{background:#eaf6ee;color:#1d6b3f;border:1px solid #93cba9}
+    .wblock{border:1px solid #e2e9f3;border-radius:9px;padding:16px;margin-bottom:12px;background:#fafcff}
+    .wans{background:#fff;border:1px solid #e6ebf3;border-radius:7px;padding:12px;margin:8px 0;white-space:pre-wrap;font-size:14px}
+    .scorebtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .sb{padding:8px 16px;border:1.5px solid #cfd8e6;border-radius:7px;background:#fff;cursor:pointer;font-weight:700;font-size:13.5px;color:#41516f}
+    .sb.on{background:#1f3864;color:#fff;border-color:#1f3864}
+    .searchbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+    .searchbar input{flex:1;min-width:200px}
+    .searchbar select{width:160px}
+    @media print{.noprint,#loginCard,.searchbar{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}}
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- LOGIN MODAL -->
+  <div id="loginCard" class="card">
+    <div class="brandbar">
+      <h1>HR / Recruiter Dashboard</h1>
+      <div class="sub">Performance Marketing Assessment — Private Candidate Management</div>
+    </div>
+    <p>Please enter the HR Passcode to access the master candidate list and assessment results.</p>
+    <div id="loginMsg"></div>
+    <form id="loginForm" onsubmit="event.preventDefault(); loginHR();">
+      <label for="passInput">HR Passcode</label>
+      <input type="password" id="passInput" placeholder="Enter HR Passcode" required autofocus>
+      <div class="rule"></div>
+      <button type="submit" id="loginBtn">Unlock HR Dashboard</button>
+    </form>
+  </div>
+
+  <!-- MAIN DASHBOARD (HIDDEN UNTIL AUTHENTICATED) -->
+  <div id="dashboard" class="hide">
+    <div class="card">
+      <div class="brandbar">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <h1>Candidate Assessment Master List</h1>
+            <div class="sub">View candidate test submissions, evaluate written answers, and sync results</div>
+          </div>
+          <button class="ghost" style="color:#fff;border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.1)" onclick="logoutHR()">Lock Dashboard</button>
+        </div>
+      </div>
+
+      <!-- STATS OVERVIEW -->
+      <div class="grid">
+        <div class="stat"><div class="n" id="stTotal">0</div><div class="l">Total Submissions</div></div>
+        <div class="stat"><div class="n" id="stPending">0</div><div class="l">Pending Evaluation</div></div>
+        <div class="stat"><div class="n" id="stGraded">0</div><div class="l">Graded</div></div>
+        <div class="stat"><div class="n" id="stProceed">0</div><div class="l">Passed (Proceed)</div></div>
+      </div>
+
+      <!-- SEARCH & FILTER BAR -->
+      <div class="searchbar">
+        <input type="text" id="searchInput" placeholder="Search candidates by name or email..." oninput="filterCandidates()">
+        <select id="levelFilter" onchange="filterCandidates()">
+          <option value="all">All Levels</option>
+          <option value="Intern">Intern</option>
+          <option value="Associate">Associate</option>
+          <option value="Manager">Manager</option>
+          <option value="Sr. Manager">Sr. Manager</option>
+        </select>
+        <select id="statusFilter" onchange="filterCandidates()">
+          <option value="all">All Statuses</option>
+          <option value="submitted">Pending Evaluation</option>
+          <option value="graded">Graded</option>
+        </select>
+        <button class="ghost" onclick="fetchCandidates()">Refresh List</button>
+      </div>
+
+      <div id="tableMsg"></div>
+
+      <!-- CANDIDATE LIST TABLE -->
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Candidate Name &amp; Email</th>
+              <th>Level</th>
+              <th>Track</th>
+              <th>Submitted</th>
+              <th>Status</th>
+              <th>MCQ Score</th>
+              <th>Total Score</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="candidateTbody">
+            <tr><td colspan="8" style="text-align:center;padding:24px;color:#7b8aa5">Loading candidates...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANDIDATE REPORT & EVALUATION DRAWER (HIDDEN) -->
+  <div id="reportCard" class="card hide">
+    <div class="row noprint" style="margin-bottom:14px;justify-content:space-between">
+      <button class="ghost" onclick="closeReport()">&larr; Back to Candidate List</button>
+      <div class="row">
+        <button id="saveScoreBtn" class="save" onclick="syncScoreToDb()">Sync &amp; Save Score to Supabase</button>
+        <button onclick="window.print()">Print / Save PDF</button>
+      </div>
+    </div>
+
+    <div id="saveStatus"></div>
+
+    <div id="reportContent"></div>
+  </div>
+</div>
+
+<script>
+  // Supabase Configuration
+  const SUPABASE_URL = "https://cjkztctwnviglmhsjnep.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqa3p0Y3R3bnZpZ2xtaHNqbmVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNzU1OTIsImV4cCI6MjEwMTk1MTU5Mn0.7smuVkpYnA1N5_BZHaKX28CpyqehJ5aFWhb8jUQCfNs";
+  const HR_PASSCODE = "admin123";
+
+  const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  let allCandidates = [];
+  let currentRecord = null;
+  let currentPayload = null;
+  let currentWrittenScores = {};
+
+  function loginHR() {
+    const entered = document.getElementById("passInput").value.trim();
+    const msg = document.getElementById("loginMsg");
+    if (entered === HR_PASSCODE) {
+      sessionStorage.setItem("hr_authenticated", "true");
+      document.getElementById("loginCard").classList.add("hide");
+      document.getElementById("dashboard").classList.remove("hide");
+      fetchCandidates();
+    } else {
+      msg.innerHTML = '<div class="warn">Incorrect HR Passcode. Please try again.</div>';
+    }
+  }
+
+  function logoutHR() {
+    sessionStorage.removeItem("hr_authenticated");
+    document.getElementById("dashboard").classList.add("hide");
+    document.getElementById("reportCard").classList.add("hide");
+    document.getElementById("loginCard").classList.remove("hide");
+    document.getElementById("passInput").value = "";
+  }
+
+  // Auto-login if previously authenticated in session
+  if (sessionStorage.getItem("hr_authenticated") === "true") {
+    document.getElementById("loginCard").classList.add("hide");
+    document.getElementById("dashboard").classList.remove("hide");
+    fetchCandidates();
+  }
+
+  async function fetchCandidates() {
+    const tbody = document.getElementById("candidateTbody");
+    const msg = document.getElementById("tableMsg");
+    if (!db) {
+      msg.innerHTML = '<div class="warn">Unable to connect to Supabase database. Check API credentials.</div>';
+      return;
+    }
+    msg.innerHTML = "";
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#7b8aa5">Fetching live candidate data...</td></tr>';
+
+    try {
+      const { data, error } = await db
+        .from('candidate_assessments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        msg.innerHTML = '<div class="warn">Error fetching records: ' + escapeHtml(error.message) + '</div>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#c0392b">Failed to load submissions</td></tr>';
+        return;
+      }
+
+      allCandidates = data || [];
+      updateStats(allCandidates);
+      filterCandidates();
+
+    } catch (err) {
+      console.error(err);
+      msg.innerHTML = '<div class="warn">An unexpected error occurred while querying the database.</div>';
+    }
+  }
+
+  function updateStats(list) {
+    document.getElementById("stTotal").textContent = list.length;
+    document.getElementById("stPending").textContent = list.filter(c => c.status !== 'graded').length;
+    document.getElementById("stGraded").textContent = list.filter(c => c.status === 'graded').length;
+    document.getElementById("stProceed").textContent = list.filter(c => c.total_score >= 80).length;
+  }
+
+  function filterCandidates() {
+    const q = document.getElementById("searchInput").value.trim().toLowerCase();
+    const lvl = document.getElementById("levelFilter").value;
+    const st = document.getElementById("statusFilter").value;
+
+    const filtered = allCandidates.filter(c => {
+      const matchQ = !q || (c.candidate_name || "").toLowerCase().includes(q) || (c.candidate_email || "").toLowerCase().includes(q);
+      const matchLvl = lvl === "all" || (c.assessment_level || "").toLowerCase().includes(lvl.toLowerCase());
+      const matchSt = st === "all" || (st === "submitted" ? c.status !== "graded" : c.status === "graded");
+      return matchQ && matchLvl && matchSt;
+    });
+
+    renderTable(filtered);
+  }
+
+  function renderTable(list) {
+    const tbody = document.getElementById("candidateTbody");
+    if (!list || list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#7b8aa5">No candidate submissions match your criteria.</td></tr>';
+      return;
+    }
+
+    let h = "";
+    list.forEach(c => {
+      const created = c.created_at ? new Date(c.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      const isGraded = c.status === 'graded';
+      const statusBadge = isGraded ? '<span class="badge graded">Graded</span>' : '<span class="badge submitted">Pending</span>';
+      const mcq = c.mcq_score !== null && c.mcq_score !== undefined ? c.mcq_score + '%' : '—';
+      const total = c.total_score !== null && c.total_score !== undefined ? c.total_score + '%' : '—';
+
+      h += `
+        <tr class="hoverable" onclick="openReport('${c.id}')">
+          <td><b>${escapeHtml(c.candidate_name)}</b><br><span class="sub">${escapeHtml(c.candidate_email)}</span></td>
+          <td>${escapeHtml(c.assessment_level || '—')}</td>
+          <td>${escapeHtml(c.role_applied || '—')}</td>
+          <td style="font-size:12.5px">${created}</td>
+          <td>${statusBadge}</td>
+          <td><b>${mcq}</b></td>
+          <td><b style="color:${c.total_score >= 80 ? '#2e7d4f' : c.total_score >= 65 ? '#e0a800' : '#16223a'}">${total}</b></td>
+          <td><button class="ghost" style="padding:6px 12px;font-size:12.5px" onclick="event.stopPropagation(); openReport('${c.id}')">${isGraded ? 'View Report' : 'Grade &amp; Review'}</button></td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = h;
+  }
+
+  function openReport(id) {
+    const rec = allCandidates.find(x => x.id === id);
+    if (!rec) return;
+
+    currentRecord = rec;
+    currentPayload = rec.submission_payload || {};
+    currentWrittenScores = {};
+
+    document.getElementById("dashboard").classList.add("hide");
+    document.getElementById("reportCard").classList.remove("hide");
+    document.getElementById("saveStatus").innerHTML = "";
+
+    renderCandidateReport();
+  }
+
+  function closeReport() {
+    document.getElementById("reportCard").classList.add("hide");
+    document.getElementById("dashboard").classList.remove("hide");
+    fetchCandidates();
+  }
+
+  function renderCandidateReport() {
+    const rec = currentRecord;
+    const p = currentPayload;
+    const container = document.getElementById("reportContent");
+
+    const slots = p.slots || [];
+    const wslots = p.wslots || [];
+
+    let correct = 0, wrong = 0, skipped = 0;
+    const secs = {};
+
+    slots.forEach(s => {
+      const sec = s.sec;
+      secs[sec] = secs[sec] || { n: 0, c: 0, s: 0 };
+      secs[sec].n++;
+
+      if (s.skipped || !s.chose) {
+        skipped++;
+        secs[sec].s++;
+      } else {
+        // Evaluate answer
+        if (s.ans !== null && s.ans !== undefined) {
+          correct++;
+          secs[sec].c++;
+        } else {
+          wrong++;
+        }
+      }
+    });
+
+    const totalSlots = slots.length || 1;
+    const autoPct = rec.mcq_score !== null && rec.mcq_score !== undefined ? Number(rec.mcq_score) : Math.round((correct / totalSlots) * 100);
+
+    // Calculate written score
+    let wpts = 0, wdone = 0;
+    wslots.forEach(ws => {
+      const val = currentWrittenScores[ws.chose];
+      if (val !== undefined && val !== null) {
+        wpts += val;
+        wdone++;
+      }
+    });
+
+    const wmax = wslots.length * 3;
+    const writPct = wdone === wslots.length && wmax > 0 ? Math.round((wpts / wmax) * 100) : (rec.written_score !== null && rec.written_score !== undefined ? Number(rec.written_score) : null);
+    const combinedPct = writPct !== null ? Math.round(autoPct * 0.7 + writPct * 0.3) : (rec.total_score !== null && rec.total_score !== undefined ? Number(rec.total_score) : null);
+
+    let bandClass = "b-pending";
+    let bandText = "PROVISIONAL — Score written answers below to finalize outcome";
+
+    if (combinedPct !== null) {
+      if (combinedPct >= 80) { bandClass = "b-go"; bandText = "PROCEED — Candidate meets bar (Score >= 80%)"; }
+      else if (combinedPct >= 65) { bandClass = "b-mid"; bandText = "BORDERLINE — Review written depth (Score 65–79%)"; }
+      else { bandClass = "b-no"; bandText = "DO NOT PROCEED — Below required bar (Score < 65%)"; }
+    }
+
+    let h = `
+      <div class="brandbar">
+        <h1>${escapeHtml(rec.candidate_name)}</h1>
+        <div class="sub">
+          Level: <b>${escapeHtml(rec.assessment_level || p.level || 'Standard')}</b> &nbsp;|&nbsp; 
+          Role: <b>${escapeHtml(rec.role_applied || p.track || 'Performance Marketing')}</b> &nbsp;|&nbsp; 
+          Email: <b>${escapeHtml(rec.candidate_email)}</b> &nbsp;|&nbsp; 
+          Supervisor: <b>${escapeHtml(rec.invigilator_name || 'In-office')}</b>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stat"><div class="n">${correct}/${totalSlots}</div><div class="l">Objective Correct</div></div>
+        <div class="stat"><div class="n">${skipped}</div><div class="l">Skipped</div></div>
+        <div class="stat"><div class="n">${autoPct}%</div><div class="l">Knowledge Score (70%)</div></div>
+        <div class="stat"><div class="n">${writPct !== null ? writPct + '%' : 'Pending'}</div><div class="l">Written Score (30%)</div></div>
+        <div class="stat"><div class="n">${combinedPct !== null ? combinedPct + '%' : '—'}</div><div class="l">Combined Score</div></div>
+      </div>
+
+      <div class="band ${bandClass}">${bandText}</div>
+
+      <div class="rule"></div>
+      <h2>Capability Breakdown</h2>
+    `;
+
+    const catOrder = ["Theoretical Knowledge", "Calculation Capability", "Strategic Mindset", "Problem Solving Approach"];
+    catOrder.forEach(cat => {
+      const o = secs[cat] || { n: 1, c: 0, s: 0 };
+      const pc = o.n > 0 ? Math.round((o.c / o.n) * 100) : 0;
+      const col = pc >= 80 ? "#2e7d4f" : pc >= 65 ? "#e0a800" : "#c0392b";
+      const verdict = pc >= 80 ? "Strong" : pc >= 65 ? "Adequate" : "Below Bar";
+
+      h += `
+        <div style="margin-bottom:16px">
+          <div class="row" style="justify-content:space-between">
+            <b>${cat}</b>
+            <span class="sub">${o.c} of ${o.n} answered ${o.s ? '(' + o.s + ' skipped)' : ''} &nbsp; <b style="color:${col}">${pc}% · ${verdict}</b></span>
+          </div>
+          <div class="sbar"><div style="width:${pc}%;background:${col}"></div></div>
+        </div>
+      `;
+    });
+
+    // Written Evaluation Section
+    h += `
+      <div class="rule"></div>
+      <h2>Score Written Answers</h2>
+      <p class="sub">Rate each written response from 0 to 3 points: 0 = No answer · 1 = Generic · 2 = Solid &amp; Specific · 3 = Exceptionally Strong.</p>
+    `;
+
+    wslots.forEach((ws, idx) => {
+      const choseId = ws.chose || (ws.pair ? ws.pair[0] : 'W1');
+      const text = ws.text || "(no answer provided)";
+      const currentScore = currentWrittenScores[choseId];
+
+      h += `
+        <div class="wblock">
+          <div class="sub" style="font-weight:700;margin-bottom:6px">Written Item ${idx + 1} (${choseId})</div>
+          <div class="wans">${escapeHtml(text)}</div>
+          <div class="scorebtns">
+            <span style="font-size:13px;font-weight:600;color:#5a6c8c;align-self:center">Points:</span>
+            ${[0,1,2,3].map(val => `
+              <button type="button" class="sb ${currentScore === val ? 'on' : ''}" onclick="setWrittenScore('${choseId}', ${val})">${val}</button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = h;
+  }
+
+  function setWrittenScore(id, val) {
+    currentWrittenScores[id] = val;
+    renderCandidateReport();
+  }
+
+  async function syncScoreToDb() {
+    if (!currentRecord || !db) return;
+    const saveBtn = document.getElementById("saveScoreBtn");
+    const statusDiv = document.getElementById("saveStatus");
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Syncing...";
+
+    const p = currentPayload;
+    const slots = p.slots || [];
+    const wslots = p.wslots || [];
+
+    let correct = 0;
+    slots.forEach(s => {
+      if (!s.skipped && s.chose && s.ans !== null && s.ans !== undefined) correct++;
+    });
+
+    const autoPct = Math.round((correct / (slots.length || 1)) * 100);
+
+    let wpts = 0, wdone = 0;
+    wslots.forEach(ws => {
+      const val = currentWrittenScores[ws.chose];
+      if (val !== undefined && val !== null) {
+        wpts += val;
+        wdone++;
+      }
+    });
+
+    const wmax = wslots.length * 3;
+    const writPct = wmax > 0 && wdone > 0 ? Math.round((wpts / wmax) * 100) : null;
+    const combinedPct = writPct !== null ? Math.round(autoPct * 0.7 + writPct * 0.3) : autoPct;
+
+    try {
+      const { error } = await db
+        .from('candidate_assessments')
+        .update({
+          mcq_score: autoPct,
+          written_score: writPct,
+          total_score: combinedPct,
+          status: 'graded',
+          graded_at: new Date().toISOString()
+        })
+        .eq('id', currentRecord.id);
+
+      if (error) {
+        console.error(error);
+        statusDiv.innerHTML = '<div class="warn">Error updating database: ' + escapeHtml(error.message) + '</div>';
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Sync & Save Score to Supabase";
+      } else {
+        statusDiv.innerHTML = '<div class="ok"><b>Scores Synced!</b> Updated candidate score record in Supabase.</div>';
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Score Synced ✓";
+        currentRecord.status = 'graded';
+        currentRecord.mcq_score = autoPct;
+        currentRecord.written_score = writPct;
+        currentRecord.total_score = combinedPct;
+      }
+    } catch (err) {
+      console.error(err);
+      statusDiv.innerHTML = '<div class="warn">An unexpected error occurred during database sync.</div>';
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Sync & Save Score to Supabase";
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+</script>
+</body>
+</html>

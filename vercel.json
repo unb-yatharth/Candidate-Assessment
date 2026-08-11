@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/hr", "dest": "/hr.html" },
+    { "src": "/grader", "dest": "/grader.html" },
+    { "src": "/sop", "dest": "/sop.html" }
+  ]
+}
